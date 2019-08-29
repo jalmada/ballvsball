@@ -10,7 +10,7 @@ function App(){
 
     const [message, setMessage] = useState('');
     const [messengerState, setMessengerState] = useState([]);
-    const [mouseState, seMouseState] = useState({x:0, y:0});
+    const [mouseState, setMouseState] = useState({key:0, x:0, y:0});
     const [circlesState, setCirclesState] = useState([]);
 
     const onSubmitMsg = e => {
@@ -27,17 +27,13 @@ function App(){
 
     const setCoordinates = (msg) => {
         let mousepos = JSON.parse(msg);
-        seMouseState({ x: mousepos.x, y:mousepos.y});
+        setMouseState({key: mousepos.key,  x: mousepos.x, y:mousepos.y});
     }
 
-    const paintRemoteCircle = (msg) => {
+    const addRemoteCircle = (msg) => {
         let circlepos = JSON.parse(msg);
         setCirclesState(prevState => [...prevState, circlepos]);
     }
-
-    const mouseMoveListener = (e) =>  {
-        socket.emit(serverConfig.sockets.ballmove, JSON.stringify({x: e.clientX, y:  e.clientY}));
-    };
 
     const handleDragStart = e => {
         e.target.setAttrs({
@@ -63,21 +59,21 @@ function App(){
     const handleDragMove = e => {
         let x = e.target.x();
         let y = e.target.y();
-        //socket.emit(serverConfig.sockets.paintcircle, JSON.stringify(newCirclePos));
+        socket.emit(serverConfig.sockets.ballmove, JSON.stringify({key: e.target.index, x: e.target.x(), y:  e.target.y()}));
     }
 
     const addCircle = (e) => {
         e.preventDefault();
-        let newCirclePos = {x: Math.random() * 200, y: Math.random() * 200};
+        let key = !circlesState ? 0 : circlesState.length;
+        let newCirclePos = {key: key, x: Math.random() * 200, y: Math.random() * 200};
         setCirclesState(prevState => [...prevState, newCirclePos]);
         socket.emit(serverConfig.sockets.paintcircle, JSON.stringify(newCirclePos));
     }
  
     useEffect(() => {
-        document.addEventListener(serverConfig.sockets.ballmove, mouseMoveListener, false);
         socket.on(serverConfig.sockets.chat, addMessage);
         socket.on(serverConfig.sockets.ballmove, setCoordinates);
-        socket.on(serverConfig.sockets.paintcircle, paintRemoteCircle);
+        socket.on(serverConfig.sockets.paintcircle, addRemoteCircle);
     },[]);
 
     return (
@@ -86,8 +82,8 @@ function App(){
             <Stage className="stage" width={window.innerWidth} height={window.innerHeight}>
                 <Layer>
                 {
-                    circlesState.map((c,i) => 
-                        <Circle key={i} 
+                    circlesState.map((c, i) => 
+                        <Circle key={c.key} 
                             x={c.x} 
                             y={c.y} 
                             fill="#89b717" 
@@ -103,10 +99,11 @@ function App(){
 
             <ul id="messages">{messengerState.map((m,i) => (<li key ={i}>{m}</li>))}</ul>
             <form action="" onSubmit={onSubmitMsg}>
-                <label htmlFor="x">X:</label><input id="x" type="text" value={mouseState.x} onChange={e => seMouseState({...mouseState, x: e.target.value})}/>
-                <label htmlFor="y">Y:</label><input id="y" type="text" value={mouseState.y} onChange={e => seMouseState({...mouseState, y: e.target.value})}/>
+                <label htmlFor="x">X:</label><input id="x" type="text" value={mouseState.x} readOnly />
+                <label htmlFor="y">Y:</label><input id="y" type="text" value={mouseState.y} readOnly/>
+                <label htmlFor="ix">Index:</label><input id="ix" type="text" value={mouseState.key} readOnly/>
                 <input type="text" id="m" value={message} onChange={e => setMessage(e.target.value)} autoComplete="off" /><button>Send</button>
-                <button id="btnAddCircle" onClick={addCircle}>Add Circle</button>
+                <button id="btnAddCircle" onClick={addCircle}>Add Circlet</button>
             </form>
         </div>
     )
