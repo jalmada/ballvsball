@@ -83,6 +83,13 @@ function App(){
         socket.on(serverConfig.sockets.paintcircle, addCircleFromRemote);
     },[]);
 
+    useEffect(() =>{
+        return () => {
+            var messagesDiv = document.getElementById('messages-container');
+            messagesDiv.scrollTo({top: messagesDiv.scrollHeight, behavior: 'smooth'});
+        }
+    },[messengerState]);
+
     return (
         <div>
             <img src="gengar.jpg" alt="" />
@@ -104,8 +111,9 @@ function App(){
                 }
                 </Layer>
             </Stage>
-
-            <ul id="messages">{messengerState.map((m,i) => (<li key ={i}>{m}</li>))}</ul>
+            <div id="messages-container" width = {window.innerWidth}>
+                <ul id="messages">{messengerState.map((m,i) => (<li key ={i}>{m}</li>))}</ul>
+            </div>
             <form action="" onSubmit={onSubmitMsg}>
                 <label htmlFor="x">X:</label><input id="x" type="text" value={ballDragState.x} readOnly />
                 <label htmlFor="y">Y:</label><input id="y" type="text" value={ballDragState.y} readOnly/>
