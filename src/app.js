@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, createRef} from 'react';
 import * as io from 'socket.io-client';
 import serverConfig from './config/server';
 import { Stage, Layer, Circle } from 'react-konva';
@@ -10,8 +10,9 @@ function App(){
 
     const [message, setMessage] = useState('');
     const [messengerState, setMessengerState] = useState([]);
-    const [mouseState, setMouseState] = useState({key:0, x:0, y:0});
+    const [mouseState, setMouseState] = useState({index: 0, key:-1, x:0, y:0});
     const [circlesState, setCirclesState] = useState([]);
+    const refStage = createRef();
 
     const onSubmitMsg = e => {
         e.preventDefault();
@@ -27,7 +28,8 @@ function App(){
 
     const setCoordinates = (msg) => {
         let mousepos = JSON.parse(msg);
-        setMouseState({key: mousepos.key,  x: mousepos.x, y:mousepos.y});
+        setCirclesState(prevState => [...prevState.slice(0,mousepos.key-1), mousepos, ... prevState.slice(mousepos.key + 1)]);
+        setMouseState({index: mousepos.key,  x: mousepos.x, y:mousepos.y});
     }
 
     const addRemoteCircle = (msg) => {
@@ -59,13 +61,13 @@ function App(){
     const handleDragMove = e => {
         let x = e.target.x();
         let y = e.target.y();
-        socket.emit(serverConfig.sockets.ballmove, JSON.stringify({key: e.target.index, x: e.target.x(), y:  e.target.y()}));
+        socket.emit(serverConfig.sockets.ballmove, JSON.stringify({id: `circle-${e.target.index}`, key: e.target.index, x: e.target.x(), y:  e.target.y()}));
     }
 
     const addCircle = (e) => {
         e.preventDefault();
         let key = !circlesState ? 0 : circlesState.length;
-        let newCirclePos = {key: key, x: Math.random() * 200, y: Math.random() * 200};
+        let newCirclePos = {id: `circle-${key}`, key: key, x: Math.random() * 200, y: Math.random() * 200};
         setCirclesState(prevState => [...prevState, newCirclePos]);
         socket.emit(serverConfig.sockets.paintcircle, JSON.stringify(newCirclePos));
     }
@@ -79,11 +81,12 @@ function App(){
     return (
         <div>
             <img src="gengar.jpg" alt="" />
-            <Stage className="stage" width={window.innerWidth} height={window.innerHeight}>
+            <Stage className="stage" width={window.innerWidth} height={window.innerHeight} ref={refStage}>
                 <Layer>
                 {
                     circlesState.map((c, i) => 
-                        <Circle key={c.key} 
+                        <Circle key={c.key}
+                            id={c.id} 
                             x={c.x} 
                             y={c.y} 
                             fill="#89b717" 
@@ -101,7 +104,7 @@ function App(){
             <form action="" onSubmit={onSubmitMsg}>
                 <label htmlFor="x">X:</label><input id="x" type="text" value={mouseState.x} readOnly />
                 <label htmlFor="y">Y:</label><input id="y" type="text" value={mouseState.y} readOnly/>
-                <label htmlFor="ix">Index:</label><input id="ix" type="text" value={mouseState.key} readOnly/>
+                <label htmlFor="ix">Index:</label><input id="ix" type="text" value={mouseState.index} readOnly/>
                 <input type="text" id="m" value={message} onChange={e => setMessage(e.target.value)} autoComplete="off" /><button>Send</button>
                 <button id="btnAddCircle" onClick={addCircle}>Add Circlet</button>
             </form>
