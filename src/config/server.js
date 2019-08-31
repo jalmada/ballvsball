@@ -1,5 +1,5 @@
 export default {
-    url: "http://localhost:3000",
+    url: "http://ballvsball-env.6mg23xx23s.us-east-1.elasticbeanstalk.com/",
     sockets: {
         chat: "chat message",
         ballmove: "mousemove",
